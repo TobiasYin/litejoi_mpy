@@ -1,6 +1,6 @@
 import json
 
-from utils import parse_url, parse_query
+from .utils import parse_url, parse_query
 
 class Request:
     def __init__(self, message):

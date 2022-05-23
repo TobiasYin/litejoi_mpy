@@ -1,6 +1,6 @@
-from cookie import CookieItem
+from .cookie import CookieItem
 import json
-from utils import get_content_type
+from .utils import get_content_type
 
 class Response:
     def __init__(self, request):

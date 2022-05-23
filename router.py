@@ -1,4 +1,4 @@
-from utils import not_found
+from .utils import not_found
 
 class Router:
     GROUP = 1

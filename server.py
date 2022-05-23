@@ -4,9 +4,9 @@ except ImportError:
     # To test in cpython
     import asyncio
 
-from request import Request
-from response import Response
-import router
+from .request import Request
+from .response import Response
+from . import router
 
 class MiddleWare:
     def pre_request(self, req: Request, resp: Response):
