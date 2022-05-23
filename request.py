@@ -25,7 +25,7 @@ class Request:
         self.raw_url = url
         self.url = parse_url(url)
         self.path = self.url.path
-        self.params = parse_query(self.url.query)
+        self.query_params = parse_query(self.url.query)
         self.body = body
         self.url_params = {}
         cookies = self.headers.get("Cookie")
@@ -37,6 +37,11 @@ class Request:
         # body for html form
         self.content_type = self.headers.get("Content-Type")
         self.post_params = self.get_post_params(self.content_type, self.body)
+
+        self.params = {}
+        self.params.update(self.query_params)
+        self.params.update(self.post_params)
+        self.params.update(self.url_params)
 
     @staticmethod
     def get_post_params(content_type, body):
