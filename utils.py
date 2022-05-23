@@ -15,6 +15,31 @@ def parse_url(url):
         q = u[1]
     return UrlType(p, q)
 
+escape_item = [' ', '<', '>', '#', '%', '+', '{', '}', '|', '^', '~', '[', ']', '‘', ';', '/', '?', ':', '@', '=', '&', '$']
+
+def escape_query(s):
+    new_s = []
+    for i in s:
+        if i in escape_item:
+            new_s.append("%{:02X}".format(ord(i)))
+        else:
+            new_s.append(i)
+    return "".join(new_s)
+
+def unescape_query(s):
+    new_s = []
+    jump = 0
+    for (index, i) in enumerate(s):
+        if jump:
+            jump -= 1
+            continue
+        if i == "%":
+            new_s.append(chr(int(s[index+1:index+3], 16)))
+            jump = 2
+        else:
+            new_s.append(i)
+    return "".join(new_s)
+
 def parse_query(q):
     items = q.split("&")
     querys = {}
@@ -22,10 +47,10 @@ def parse_query(q):
         if not i:
             continue
         p = i.split("=", 1)
-        k = p[0]
+        k = unescape_query(p[0])
         v = ""
         if len(p) > 1:
-            v = p[1]
+            v = unescape_query(p[1])
         querys[k] = v
 
     return querys

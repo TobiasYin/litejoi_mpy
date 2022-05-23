@@ -17,10 +17,13 @@ class MiddleWare:
 
 
 def handle_request(req, server):
-    func = server.route.match_url(req)
-    resp = Response(req)
+    resp = Response(req)   
+    if not req:
+        resp.error(500)
+        return resp
 
     middlewares = server.middlewares
+    func = server.route.match_url(req)
 
     if func is None:
         print("Func not implament")
@@ -56,19 +59,18 @@ class ProcessHandler():
 
     async def process(self, reader, writer):
         print("Start process request!")
-        message = await reader.read(1024)  # max request size 1KB
-        message = message.decode('utf-8')
-
-        if len(message) > 1:
-            request = Request(message)
-
-            response = handle_request(request, self.server)
-            resp = response.encode()
-            try:
-                await writer.awrite(resp)
-            except Exception:
-                # use in cpython
-                writer.write(resp)
+        request = None
+        try:
+            request = await Request(reader)
+        except Exception as e:
+            print("parse request Error, request: {}".format(e))
+        response = handle_request(request, self.server)
+        resp = response.encode()
+        try:
+            await writer.awrite(resp)
+        except Exception:
+            # use in cpython
+            writer.write(resp)
 
         writer.close()
         await writer.wait_closed()

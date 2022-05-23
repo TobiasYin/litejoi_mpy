@@ -3,18 +3,63 @@ import json
 from .utils import parse_url, parse_query
 
 class Request:
-    def __init__(self, message):
-        m = message.split("\r\n\r\n", 1)
-        header, body = "", ""
-        if len(m) == 1:
-            m = m.split("\n\n", 1)
-            header = m[0]
-            if len(m) > 1:
-                body = m[1]
-        elif len(m) >= 2:
-            header = m[0]
-            body = m[1]
-        body = body.strip()
+    def read(self):
+        self.reader.read()
+
+    def read_into(self, size):
+        self.buffer += self.reader.read(size)
+
+    def read_all(self, size):
+        last_size = len(self.buffer)
+        while True:
+            self.read_into(100)
+            size = len(self.buffer)
+            if last_size == size:
+                data = self.buffer
+                self.buffer = b""
+                return data
+
+    def read_until(self, sep):
+        part_size = len(sep)
+        if part_size < 100:
+            part_size = 100
+        if len(self.buffer) > part_size:
+            r = self._find_sep(sep)
+            if r:
+                return r
+        last_size = len(self.buffer)
+        while True:
+            self.read_into(part_size)
+            size = len(self.buffer)
+            if last_size == size:
+                return None
+            r = self._find_sep(sep)
+            if r:
+                return r
+     
+    def write_body(self, target):
+        with open(target, 'wb') as f:
+            self.read_into(100)
+            while self.buffer:
+                f.write(self.buffer)
+                self.buffer = b""
+                self.read_into(100)
+    
+            
+
+
+    def _find_sep(self, sep):
+        f = self.buffer.find(sep)
+        if f == -1:
+            return None
+        target = self.buffer[:f]
+        self.buffer = self.buffer[f + len(sep):]
+        return target
+                
+    def __init__(self, reader):
+        self.reader = reader
+        self.buffer = b""
+        header = self.read_until(b"\r\n\r\n")
         lines = header.split("\n")
         headers = {i[0]: i[1] for i in map(
             lambda x: [i.strip() for i in x.split(":", 1)], lines[1:])}
@@ -26,7 +71,6 @@ class Request:
         self.url = parse_url(url)
         self.path = self.url.path
         self.query_params = parse_query(self.url.query)
-        self.body = body
         self.url_params = {}
         cookies = self.headers.get("Cookie")
         self.cookies = {}
@@ -36,17 +80,20 @@ class Request:
 
         # body for html form
         self.content_type = self.headers.get("Content-Type")
-        self.post_params = self.get_post_params(self.content_type, self.body)
+        self.post_params = self.get_post_params(self.content_type)
 
         self.params = {}
         self.params.update(self.query_params)
         self.params.update(self.post_params)
         self.params.update(self.url_params)
 
-    @staticmethod
-    def get_post_params(content_type, body):
+    def load_body(self):
+        return self.read_all()
+    def get_post_params(self, content_type):
         if content_type == "application/json":
+            body = self.load_body()
             return json.loads(body)
         elif content_type == "application/x-www-form-urlencoded":
+            body = self.load_body() 
             return {i[0]: i[1] for i in parse_query(body)}
         return {}

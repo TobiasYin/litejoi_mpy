@@ -33,7 +33,7 @@ class Response:
         self.headers["Content-Type"] = get_content_type(path)
 
     def error(self, status, message=""):
-        status_info = self.STATUS.get(str(status), "NOT DEFINE")
+        status_info = STATUS.get(str(status), "NOT DEFINE")
         self.html(
             "<h1>{} {}</h1><h2>{}</h2>".format(
                 status, status_info, "" if not message else "error message:" + message),
