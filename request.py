@@ -3,13 +3,13 @@ import json
 from .utils import parse_url, parse_query
 
 class Request:
-    def read(self):
+    async def read(self):
         self.reader.read()
 
-    def read_into(self, size):
-        self.buffer += self.reader.read(size)
+    async def read_into(self, size):
+        self.buffer += await self.reader.read(size)
 
-    def read_all(self, size):
+    async def read_all(self, size):
         last_size = len(self.buffer)
         while True:
             self.read_into(100)
@@ -19,7 +19,7 @@ class Request:
                 self.buffer = b""
                 return data
 
-    def read_until(self, sep):
+    async def read_until(self, sep):
         part_size = len(sep)
         if part_size < 100:
             part_size = 100
@@ -29,7 +29,7 @@ class Request:
                 return r
         last_size = len(self.buffer)
         while True:
-            self.read_into(part_size)
+            await self.read_into(part_size)
             size = len(self.buffer)
             if last_size == size:
                 return None
@@ -37,9 +37,9 @@ class Request:
             if r:
                 return r
      
-    def write_body(self, target):
+    async def write_body(self, target):
         with open(target, 'wb') as f:
-            self.read_into(100)
+            await self.read_into(100)
             while self.buffer:
                 f.write(self.buffer)
                 self.buffer = b""
@@ -58,8 +58,11 @@ class Request:
                 
     def __init__(self, reader):
         self.reader = reader
+
+    async def init(self):
         self.buffer = b""
-        header = self.read_until(b"\r\n\r\n")
+        header = await self.read_until(b"\r\n\r\n")
+        header = header.decode('utf-8')
         lines = header.split("\n")
         headers = {i[0]: i[1] for i in map(
             lambda x: [i.strip() for i in x.split(":", 1)], lines[1:])}

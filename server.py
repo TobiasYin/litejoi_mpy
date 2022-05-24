@@ -16,7 +16,7 @@ class MiddleWare:
         return True
 
 
-def handle_request(req, server):
+async def handle_request(req, server):
     resp = Response(req)   
     if not req:
         resp.error(500)
@@ -38,7 +38,7 @@ def handle_request(req, server):
                     break
 
             if break_pos < 0:
-                func(req, resp)
+                await func(req, resp)
 
             for item in middlewares[break_pos::-1]:
                 res = item.post_request(req, resp)
@@ -61,10 +61,12 @@ class ProcessHandler():
         print("Start process request!")
         request = None
         try:
-            request = await Request(reader)
+            request = Request(reader)
+            await request.init()
         except Exception as e:
             print("parse request Error, request: {}".format(e))
-        response = handle_request(request, self.server)
+        response = await handle_request(request, self.server)
+        print("success resp")
         resp = response.encode()
         try:
             await writer.awrite(resp)
