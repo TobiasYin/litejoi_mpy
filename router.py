@@ -17,8 +17,10 @@ class Router:
         self.has_not_found = False
 
     def bind_not_found(self, func=not_found):
+        async def w(r, q):
+            return func(r, q)
         if not self.has_not_found or func != not_found:
-            self.add_url("*", not_found, ['*'])
+            self.add_url("*", w, ['*'])
             self.has_not_found = True
 
     def bind_func(self, methods, func):
