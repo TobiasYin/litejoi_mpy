@@ -75,7 +75,6 @@ class ProcessHandler():
         self.server = server
 
     async def process(self, reader, writer):
-        print("Start process request!")
         request = None
         w = writerWrap(writer)
         try:
