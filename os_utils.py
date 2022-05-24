@@ -46,3 +46,6 @@ def clean(path):
     if is_abs:
         p = "/" + p
     return p
+
+def path_join(*args):
+    return clean("/".join(args))
