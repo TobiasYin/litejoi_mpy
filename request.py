@@ -61,8 +61,9 @@ class Request:
         self.buffer = self.buffer[f + len(sep):]
         return target
                 
-    def __init__(self, reader):
+    def __init__(self, reader, writer):
         self.reader = reader
+        self.writer = writer
 
     async def init(self):
         self._now_read = 0

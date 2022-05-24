@@ -8,6 +8,7 @@ from .request import Request
 from .response import Response
 from . import router
 
+
 class MiddleWare:
     def pre_request(self, req: Request, resp: Response):
         return True
@@ -17,7 +18,7 @@ class MiddleWare:
 
 
 async def handle_request(req, server):
-    resp = Response(req)   
+    resp = Response(req)
     if not req:
         resp.error(500)
         return resp
@@ -53,6 +54,22 @@ async def handle_request(req, server):
     return resp
 
 
+class writerWrap:
+    def __init__(self, writer):
+        self.writer = writer
+        self.cpy = False
+
+    async def write(self, data):
+        if self.cpy:
+            self.writer.write(data)
+        else:
+            try:
+                await self.writer.awrite(data)
+            except Exception as e:
+                self.cpy = True
+                self.writer.write(data)
+
+
 class ProcessHandler():
     def __init__(self, server):
         self.server = server
@@ -60,19 +77,14 @@ class ProcessHandler():
     async def process(self, reader, writer):
         print("Start process request!")
         request = None
+        w = writerWrap(writer)
         try:
-            request = Request(reader)
+            request = Request(reader, w)
             await request.init()
         except Exception as e:
             print("parse request Error, request: {}".format(e))
         response = await handle_request(request, self.server)
-        print("success resp")
-        resp = response.encode()
-        try:
-            await writer.awrite(resp)
-        except Exception:
-            # use in cpython
-            writer.write(resp)
+        await response.write_resp()
 
         writer.close()
         await writer.wait_closed()

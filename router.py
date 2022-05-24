@@ -114,9 +114,9 @@ def url(url, methods, router=root):
         methods = [methods]
 
     def decorator(func):
-        router.add_url(url, func, methods)
         async def w(req, resp):
             func(req, resp)
+        router.add_url(url, w, methods)
         return w
 
     return decorator
