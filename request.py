@@ -70,6 +70,9 @@ class Request:
         self.buffer = b""
         self.content_length = -1
         header = await self.read_until(b"\r\n\r\n")
+        if not header:
+            print("no heare found")
+            return
         self._now_read = len(self.buffer)
         header = header.decode('utf-8')
         lines = header.split("\n")

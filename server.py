@@ -83,8 +83,11 @@ class ProcessHandler():
             await request.init()
         except Exception as e:
             print("parse request Error, request: {}".format(e))
-        response = await handle_request(request, self.server)
-        await response.write_resp()
+        try:
+            response = await handle_request(request, self.server)
+            await response.write_resp()
+        except Exception as e:
+            print("handler or write error, request: {}".format(e))
 
         writer.close()
         await writer.wait_closed()
