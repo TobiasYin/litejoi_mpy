@@ -7,7 +7,14 @@ class Request:
         self.reader.read()
 
     async def read_into(self, size):
-        self.buffer += await self.reader.read(size)
+        left = size
+        if self.content_length != -1:
+            left = min(left, self.content_length - self._now_read)
+            if left <= 0:
+                return
+        data = await self.reader.read(left)
+        self.buffer += data
+        self._now_read += len(data)
 
     async def read_all(self, size):
         last_size = len(self.buffer)
@@ -43,9 +50,7 @@ class Request:
             while self.buffer:
                 f.write(self.buffer)
                 self.buffer = b""
-                self.read_into(100)
-    
-            
+                await self.read_into(100)
 
 
     def _find_sep(self, sep):
@@ -60,15 +65,19 @@ class Request:
         self.reader = reader
 
     async def init(self):
+        self._now_read = 0
         self.buffer = b""
+        self.content_length = -1
         header = await self.read_until(b"\r\n\r\n")
+        self._now_read = len(self.buffer)
         header = header.decode('utf-8')
         lines = header.split("\n")
         headers = {i[0]: i[1] for i in map(
             lambda x: [i.strip() for i in x.split(":", 1)], lines[1:])}
         method, url, http_version = lines[0].split()
-        self.http_version = http_version
         self.headers = headers
+        self.content_length = int(self.headers.get("Content-Length", "-1"))
+        self.http_version = http_version
         self.method = method.upper()
         self.raw_url = url
         self.url = parse_url(url)
